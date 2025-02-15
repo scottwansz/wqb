@@ -48,6 +48,11 @@ python -m pip install wqb
 python -m pip install wqb --upgrade --extra-index-url https://pypi.org/simple
 ```
 
+## Run Web app
+```sh
+uvicorn main:app --reload
+```
+
 ## USAGE
 
 **PLEASE ALWAYS REMEMBER:**
