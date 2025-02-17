@@ -8,6 +8,7 @@ import os
 import time
 
 import wqb
+from service import alpha
 from wqb import WQBSession
 
 app = FastAPI(
@@ -24,6 +25,10 @@ templates = Jinja2Templates(directory="templates")
 
 # 加载 .env 文件
 load_dotenv()
+# 从 .env 文件中读取用户名和密码
+username = os.getenv('API_USERNAME')
+password = os.getenv('API_PASSWORD')
+wqbs = WQBSession((username, password))
 
 # 模拟任务列表
 tasks = [f"Task {i}" for i in range(10)]
@@ -75,30 +80,7 @@ async def get_progress():
 
 @app.post("/api/data", response_class=JSONResponse)
 async def post_data(request: Request):
-    # 从 .env 文件中读取用户名和密码
-    username = os.getenv('API_USERNAME')
-    password = os.getenv('API_PASSWORD')
-    wqbs = WQBSession((username, password))
     # resp = wqbs.auth_request()
-
-    alpha = {
-        'type': 'REGULAR',
-        'settings': {
-            'instrumentType': 'EQUITY',
-            'region': 'USA',
-            'universe': 'TOP3000',
-            'delay': 1,
-            'decay': 13,
-            'neutralization': 'INDUSTRY',
-            'truncation': 0.13,
-            'pasteurization': 'ON',
-            'unitHandling': 'VERIFY',
-            'nanHandling': 'OFF',
-            'language': 'FASTEXPR',
-            'visualization': False
-        },
-        'regular': 'liabilities/assets',
-    }
 
     # asyncio.create_task(
     #     wqbs.simulate(
