@@ -61,7 +61,10 @@ if __name__ == '__main__':
                             alpha['settings']['neutralization'] = gb
 
     alpha_list.append(alpha)
+
     print('length of alpha list:', len(alpha_list))
+    print(alpha_list[0])
+
     wqbs.simulate(
         alpha_list,
         on_start=lambda vars: print(vars['url']),
