@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import os
 
 from dotenv import load_dotenv
@@ -27,8 +28,8 @@ alpha = {
 
 def build_alphas(wqbs):
     # global resps, idx, resp, alpha_list
-    region = ['USA', 'EUR']
-    universe = ['USA_TOP3000', 'ILLIQUID_MINVOL1M', 'GLB_MINVOL1M']
+    region = ['USA']  # , 'EUR'
+    universe = ['TOP3000']  # , 'ILLIQUID_MINVOL1M', 'GLB_MINVOL1M'
     dataset_id = 'insiders1'
     fields = []
 
@@ -58,7 +59,7 @@ def build_alphas(wqbs):
 
     print(fields)
 
-    vec_operator = ['vec_avg', 'vec_stddev', 'vec_skewness']
+    vec_operator = ['vec_avg', 'vec_sum']
     group_operator = ['group_rank', 'group_zscore']
     group_by = ['SUBINDUSTRY', 'SECTOR']
     backfill_days = [5, 20, 60]
@@ -81,11 +82,13 @@ def build_alphas(wqbs):
                                     backfill_days=b,
                                     group_by=gb
                                 )
-                                alpha['regular'] = regular_expr
-                                alpha['settings']['region'] = r
-                                alpha['settings']['universe'] = u
-                                alpha['settings']['neutralization'] = gb
-                                alpha_list.append(alpha)
+
+                                a = copy.deepcopy(alpha)
+                                a['regular'] = regular_expr
+                                a['settings']['region'] = r
+                                a['settings']['universe'] = u
+                                a['settings']['neutralization'] = gb
+                                alpha_list.append(a)
 
     print('length of alpha list:', len(alpha_list))
     print(alpha_list[0])
@@ -107,18 +110,21 @@ if __name__ == '__main__':
 
     alpha_list = build_alphas(wqbs)
 
-    resp = asyncio.run(
-        wqbs.simulate(
-            alpha,  # `alpha` or `multi_alpha`
-            on_nolocation=lambda vars: print(vars['target'], vars['resp'], sep='\n'),
-            on_start=lambda vars: print(vars['url']),
-            on_finish=lambda vars: print(vars['resp']),
-            on_success=lambda vars: print(vars['resp']),
-            on_failure=lambda vars: print(vars['resp']),
-        )
-    )
-    print(resp.status_code)
-    print(resp.text)
+    for alpha in alpha_list:
+        print(alpha)
+
+    # resp = asyncio.run(
+    #     wqbs.simulate(
+    #         alpha,  # `alpha` or `multi_alpha`
+    #         on_nolocation=lambda vars: print(vars['target'], vars['resp'], sep='\n'),
+    #         on_start=lambda vars: print(vars['url']),
+    #         on_finish=lambda vars: print(vars['resp']),
+    #         on_success=lambda vars: print(vars['resp']),
+    #         on_failure=lambda vars: print(vars['resp']),
+    #     )
+    # )
+    # print(resp.status_code)
+    # print(resp.text)
 
     # resps = asyncio.run(
     #     wqbs.concurrent_simulate(

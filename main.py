@@ -32,7 +32,8 @@ wqbs = WQBSession((username, password))
 wqbs.auth_request()
 
 # 模拟任务列表
-tasks = [f"Task {i}" for i in range(10)]
+alpha_list = build_alphas(wqbs)
+tasks = [f"Task {i}" for i in range(len(alpha_list))]
 task_progress = {task: 0 for task in tasks}
 task_start_times = {task: None for task in tasks}
 
@@ -84,26 +85,9 @@ async def post_data(request: Request):
 
     print('"/api/data" requested')
 
-    # asyncio.create_task(
-    #     wqbs.simulate(
-    #         alpha,  # `alpha` or `multi_alpha`
-    #         on_nolocation=lambda vars: print(vars['target'], vars['resp'], sep='\n'),
-    #         on_start=lambda vars: print(vars['url']),
-    #         on_finish=lambda vars: print(vars['resp']),
-    #         on_success=lambda vars: print(vars['resp']),
-    #         on_failure=lambda vars: print(vars['resp']),
-    #     )
-    # )
-
-    alphas = build_alphas(wqbs)  # [alpha for _ in range(2)]
-    multi_alphas = wqb.to_multi_alphas(alphas, 10)
-    concurrency = 8  # 1 <= concurrency <= 10
-
     asyncio.create_task(
-        wqbs.concurrent_simulate(
-            multi_alphas,  # `alphas` or `multi_alphas`
-            concurrency,
-            return_exceptions=True,
+        wqbs.simulate(
+            alpha,  # `alpha` or `multi_alpha`
             on_nolocation=lambda vars: print(vars['target'], vars['resp'], sep='\n'),
             on_start=lambda vars: print(vars['url']),
             on_finish=lambda vars: print(vars['resp']),
@@ -111,6 +95,23 @@ async def post_data(request: Request):
             on_failure=lambda vars: print(vars['resp']),
         )
     )
+
+    # alphas = build_alphas(wqbs)  # [alpha for _ in range(2)]
+    # multi_alphas = wqb.to_multi_alphas(alphas, 10)
+    # concurrency = 8  # 1 <= concurrency <= 10
+    #
+    # asyncio.create_task(
+    #     wqbs.concurrent_simulate(
+    #         multi_alphas,  # `alphas` or `multi_alphas`
+    #         concurrency,
+    #         return_exceptions=True,
+    #         on_nolocation=lambda vars: print(vars['target'], vars['resp'], sep='\n'),
+    #         on_start=lambda vars: print(vars['url']),
+    #         on_finish=lambda vars: print(vars['resp']),
+    #         on_success=lambda vars: print(vars['resp']),
+    #         on_failure=lambda vars: print(vars['resp']),
+    #     )
+    # )
 
     return JSONResponse(content={'success': 'alpha submitted'})
 
@@ -127,9 +128,23 @@ async def handle_task(task):
         print(f"Task {task_number} started.")
         task_start_times[task] = time.time()
 
-        for i in range(1, 11):  # 模拟任务处理进度
-            await asyncio.sleep(1)  # 模拟耗时操作
-            task_progress[task] = i * 10
+        alpha = alpha_list[int(task_number)]
+        print(alpha)
+
+        await wqbs.simulate(
+            alpha,  # `alpha` or `multi_alpha`
+            on_nolocation=lambda vars: print(vars['target'], vars['resp'], sep='\n'),
+            on_start=lambda vars: print(vars['url']),
+            on_finish=lambda vars: print(vars['resp']),
+            on_success=lambda vars: print(vars['resp']),
+            on_failure=lambda vars: print(vars['resp']),
+        )
+
+        task_progress[task] = 100
+
+        # for i in range(1, 11):  # 模拟任务处理进度
+        #     await asyncio.sleep(1)  # 模拟耗时操作
+        #     task_progress[task] = i * 10
 
             # 输出当前任务进度
             # print(f"Task {task_number} progress: {task_progress[task]}%")
