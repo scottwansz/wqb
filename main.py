@@ -8,7 +8,7 @@ import os
 import time
 
 import wqb
-from service import alpha
+from service import alpha, build_alphas
 from wqb import WQBSession
 
 app = FastAPI(
@@ -29,6 +29,7 @@ load_dotenv()
 username = os.getenv('API_USERNAME')
 password = os.getenv('API_PASSWORD')
 wqbs = WQBSession((username, password))
+wqbs.auth_request()
 
 # 模拟任务列表
 tasks = [f"Task {i}" for i in range(10)]
@@ -80,7 +81,8 @@ async def get_progress():
 
 @app.post("/api/data", response_class=JSONResponse)
 async def post_data(request: Request):
-    # resp = wqbs.auth_request()
+
+    print('"/api/data" requested')
 
     # asyncio.create_task(
     #     wqbs.simulate(
@@ -88,12 +90,12 @@ async def post_data(request: Request):
     #         on_nolocation=lambda vars: print(vars['target'], vars['resp'], sep='\n'),
     #         on_start=lambda vars: print(vars['url']),
     #         on_finish=lambda vars: print(vars['resp']),
-    #         # on_success=lambda vars: print(vars['resp']),
-    #         # on_failure=lambda vars: print(vars['resp']),
+    #         on_success=lambda vars: print(vars['resp']),
+    #         on_failure=lambda vars: print(vars['resp']),
     #     )
     # )
 
-    alphas = [alpha for _ in range(200)]
+    alphas = build_alphas(wqbs)  # [alpha for _ in range(2)]
     multi_alphas = wqb.to_multi_alphas(alphas, 10)
     concurrency = 8  # 1 <= concurrency <= 10
 
@@ -101,12 +103,12 @@ async def post_data(request: Request):
         wqbs.concurrent_simulate(
             multi_alphas,  # `alphas` or `multi_alphas`
             concurrency,
-            # return_exceptions=True,
-            # on_nolocation=lambda vars: print(vars['target'], vars['resp'], sep='\n'),
-            # on_start=lambda vars: print(vars['url']),
+            return_exceptions=True,
+            on_nolocation=lambda vars: print(vars['target'], vars['resp'], sep='\n'),
+            on_start=lambda vars: print(vars['url']),
             on_finish=lambda vars: print(vars['resp']),
-            # on_success=lambda vars: print(vars['resp']),
-            # on_failure=lambda vars: print(vars['resp']),
+            on_success=lambda vars: print(vars['resp']),
+            on_failure=lambda vars: print(vars['resp']),
         )
     )
 
@@ -124,9 +126,11 @@ async def handle_task(task):
         task_number = task.split()[1]  # 提取任务号
         print(f"Task {task_number} started.")
         task_start_times[task] = time.time()
+
         for i in range(1, 11):  # 模拟任务处理进度
             await asyncio.sleep(1)  # 模拟耗时操作
             task_progress[task] = i * 10
+
             # 输出当前任务进度
             # print(f"Task {task_number} progress: {task_progress[task]}%")
             # 计算并输出整体进度
@@ -134,6 +138,7 @@ async def handle_task(task):
             # total_tasks = len(tasks)
             # overall_progress = (total_progress / 100 / total_tasks) * 100
             # print(f"Overall progress: {overall_progress:.2f}%")
+
         task_end_time = time.time()
         task_duration = task_end_time - task_start_times[task]
         task_start_times[task] = task_duration
