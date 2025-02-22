@@ -4,8 +4,28 @@ import os
 
 from dotenv import load_dotenv
 
+import wqb
 from wqb import WQBSession
-
+"""
+{
+    "instrumentType": "EQUITY",
+    "region": "USA",
+    "universe": "TOP3000",
+    "delay": 1,
+    "decay": 0,
+    "neutralization": "SUBINDUSTRY",
+    "truncation": 0.08,
+    "lookbackDays": 256,
+    "pasteurization": "ON",
+    "unitHandling": "VERIFY",
+    "nanHandling": "OFF",
+    "selectionHandling": "POSITIVE",
+    "selectionLimit": 10,
+    "language": "FASTEXPR",
+    "visualization": false,
+    "testPeriod": "P2Y"
+}
+"""
 alpha = {
     'type': 'REGULAR',
     'settings': {
@@ -26,17 +46,14 @@ alpha = {
 }
 
 
-def build_alphas(wqbs):
-    # global resps, idx, resp, alpha_list
-    region = ['USA']  # , 'EUR'
-    universe = ['TOP3000']  # , 'ILLIQUID_MINVOL1M', 'GLB_MINVOL1M'
-    dataset_id = 'insiders1'
+def build_alphas(wqbs, region='USA', delay=1, universe='TOP3000', dataset_id=None):
+
     fields = []
 
     resps = wqbs.search_fields(
-        region='USA',
-        delay=1,
-        universe='TOP3000',
+        region=region,
+        delay=delay,
+        universe=universe,
         dataset_id=dataset_id
         # search='<search>',  # 'open'
         # category='<category>',  # 'pv', 'model', 'analyst'
@@ -68,27 +85,26 @@ def build_alphas(wqbs):
 
     alpha_list = []
 
-    for r in region:
-        for u in universe:
-            for v in vec_operator:
-                for g in group_operator:
-                    for b in backfill_days:
-                        for gb in group_by:
-                            for f in fields:
-                                regular_expr = template.format(
-                                    group_operator=g,
-                                    vec_operator=v,
-                                    field=f,
-                                    backfill_days=b,
-                                    group_by=gb
-                                )
+    for v in vec_operator:
+        for g in group_operator:
+            for b in backfill_days:
+                for gb in group_by:
+                    for f in fields:
+                        regular_expr = template.format(
+                            group_operator=g,
+                            vec_operator=v,
+                            field=f,
+                            backfill_days=b,
+                            group_by=gb
+                        )
 
-                                a = copy.deepcopy(alpha)
-                                a['regular'] = regular_expr
-                                a['settings']['region'] = r
-                                a['settings']['universe'] = u
-                                a['settings']['neutralization'] = gb
-                                alpha_list.append(a)
+                        a = copy.deepcopy(alpha)
+                        a['regular'] = regular_expr
+                        a['settings']['region'] = region
+                        a['settings']['universe'] = universe
+                        a['settings']['delay'] = delay
+                        a['settings']['neutralization'] = gb
+                        alpha_list.append(a)
 
     print('length of alpha list:', len(alpha_list))
     print(alpha_list[0])
@@ -108,10 +124,15 @@ if __name__ == '__main__':
     print(resp.ok)  # True
     print(resp.json()['user']['id'])  # <Your BRAIN User ID>
 
-    alpha_list = build_alphas(wqbs)
+    region = 'USA'  # 'USA', 'EUR'
+    universe = 'ILLIQUID_MINVOL1M'  # 'TOP3000', 'ILLIQUID_MINVOL1M', 'GLB_MINVOL1M'
+    delay = 1
+    dataset_id = 'insiders1'
 
-    for alpha in alpha_list:
-        print(alpha)
+    alpha_list = build_alphas(wqbs, region, delay, universe, dataset_id)
+
+    # for alpha in alpha_list:
+    #     print(alpha)
 
     # resp = asyncio.run(
     #     wqbs.simulate(
@@ -126,20 +147,25 @@ if __name__ == '__main__':
     # print(resp.status_code)
     # print(resp.text)
 
-    # resps = asyncio.run(
-    #     wqbs.concurrent_simulate(
-    #         alpha_list,  # `alphas` or `multi_alphas`
-    #         concurrency=8,
-    #         return_exceptions=True,
-    #         on_nolocation=lambda vars: print(vars['target'], vars['resp'], sep='\n'),
-    #         on_start=lambda vars: print(vars['url']),
-    #         on_finish=lambda vars: print(vars['resp']),
-    #         on_success=lambda vars: print(vars['resp']),
-    #         on_failure=lambda vars: print(vars['resp']),
-    #     )
-    # )
-    #
-    # for idx, resp in enumerate(resps, start=1):
-    #     print(idx)
-    #     print(resp.status_code)
-    #     print(resp.text)
+    multi_alphas = wqb.to_multi_alphas(alpha_list, 10)
+
+    # for m in multi_alphas:
+    #     print(m)
+
+    resps = asyncio.run(
+        wqbs.concurrent_simulate(
+            alpha_list,  # `alphas` or `multi_alphas`
+            concurrency=10,
+            return_exceptions=True,
+            on_nolocation=lambda vars: print(vars['target'], vars['resp'], sep='\n'),
+            on_start=lambda vars: print(vars['url']),
+            on_finish=lambda vars: print(vars['resp']),
+            on_success=lambda vars: print(vars['resp']),
+            on_failure=lambda vars: print(vars['resp']),
+        )
+    )
+
+    for idx, resp in enumerate(resps, start=1):
+        print(idx)
+        print(resp.status_code)
+        print(resp.text)

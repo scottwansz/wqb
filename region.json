@@ -1,0 +1,22 @@
+{
+  "USA": {
+    "delay": [1, 0],
+    "universe": ["TOP3000", "TOP1000", "TOP500", "TOP200", "ILLIQUID_MINVOL1M", "TPSP500"]
+  },
+  "GLB": {
+    "delay": [1],
+    "universe": ["TOP3000", "MINVOL1M"]
+  },
+  "EUR": {
+    "delay": [1, 0],
+    "universe": ["TOP2500","TOP1200", "TOP800", "TOP400", "ILLIQUID_MINVOL1M"]
+  },
+  "ASI": {
+    "delay": [1],
+    "universe": ["MINVOL1M", "ILLIDQUID_MINVOL1M"]
+  },
+  "CHN": {
+    "delay": [1, 0],
+    "universe": ["TOP2000U"]
+  }
+}
